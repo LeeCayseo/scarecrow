@@ -11,6 +11,7 @@ let mic;
 let threshold = 0.1;
 let isBlow = false;
 let isAnimating = true;
+let countdown = 12;
 let countdownStartTime = null;
 let opacity = 255;
 let fadeInStartTime = null;
@@ -27,22 +28,25 @@ function preload() {
     questionImage = loadImage('image.png');
 
     for (let i = 1; i <= totalFrames; i++) {
-        frames.push(loadImage(`source/${nf(i, 4)}.webp`));
+        let filename = nf(i, 4) + ".webp";
+        frames.push(loadImage(filename));
     }
 }
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
-    video = createCapture(VIDEO);
-    video.size(320, 240);
+    video = createCapture(VIDEO); // 해상도 설정 제거
+    video.size(width, height);
     video.hide();
     faceMesh.detectStart(video, gotFaces);
 
     mic = new p5.AudioIn();
-    userStartAudio().then(() => mic.start());
+    mic.start();
 
     textFont(customFont);
 }
+
+// ... (나머지 코드는 동일)
 
 function draw() {
     push();
@@ -66,7 +70,6 @@ function draw() {
 
 function checkBlow() {
     let volume = mic.getLevel();
-    console.log("Volume:", volume); // 마이크 볼륨 확인
     isBlow = volume > threshold;
 }
 
@@ -76,11 +79,9 @@ function drawGifOnFace() {
     let leftEye = face.keypoints[33];
     let rightEye = face.keypoints[263];
 
-    console.log("Face Keypoints:", nose, leftEye, rightEye); // 얼굴 좌표 확인
-
-    let centerX = (nose.x * width + leftEye.x * width + rightEye.x * width) / 3;
-    let centerY = (nose.y * height + leftEye.y * height + rightEye.y * height) / 3;
-    let faceWidth = dist(leftEye.x * width, leftEye.y * height, rightEye.x * width, rightEye.y * height) * 4;
+    let centerX = (nose.x + leftEye.x + rightEye.x) / 3 - 150;
+    let centerY = (nose.y + leftEye.y + rightEye.y) / 3 - 180;
+    let faceWidth = dist(leftEye.x, leftEye.y, rightEye.x, rightEye.y) * 4;
     let faceHeight = faceWidth * 0.75;
 
     if (isBlow) {
@@ -106,7 +107,7 @@ function drawGifOnFace() {
     }
 
     tint(255, opacity);
-    image(frames[currentFrame], centerX - faceWidth / 2, centerY - faceHeight / 2, faceWidth, faceHeight);
+    image(frames[currentFrame], width - centerX - faceWidth / 2, centerY - faceHeight / 2, faceWidth, faceHeight);
     noTint();
 }
 
@@ -164,7 +165,6 @@ function mousePressed() {
 
 function gotFaces(results) {
     faces = results || [];
-    console.log("Detected faces:", faces.length); // 얼굴 감지 확인
 }
 
 function windowResized() {
